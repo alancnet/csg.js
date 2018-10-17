@@ -333,12 +333,16 @@ class CSGNode {
     }
 
     if (front.length) {
-      if (!this.front) this.front = new CSGNode();
+      if (!this.front) {
+        this.front = new CSGNode();
+      }
       this.front.build(front);
     }
 
     if (back.length) {
-      if (!this.back) this.back = new CSGNode();
+      if (!this.back) {
+        this.back = new CSGNode();
+      }
       this.back.build(back);
     }
   }
@@ -372,7 +376,7 @@ class CSG {
   // 
   // Example code:
   // 
-  //     var cube = CSG.cube({
+  //     const cube = CSG.cube({
   //       center: [0, 0, 0],
   //       radius: 1
   //     });
@@ -381,23 +385,28 @@ class CSG {
     const r = !options.radius ? [1, 1, 1] : options.radius instanceof Array ?
              options.radius : [options.radius, options.radius, options.radius];
     
-    return CSG.fromPolygons([
-      [[0, 4, 6, 2], [-1, 0, 0]],
-      [[1, 3, 7, 5], [+1, 0, 0]],
-      [[0, 1, 5, 4], [0, -1, 0]],
-      [[2, 6, 7, 3], [0, +1, 0]],
-      [[0, 2, 3, 1], [0, 0, -1]],
-      [[4, 5, 7, 6], [0, 0, +1]]
-    ].map(info => {
-      return new Polygon(info[0].map(function(i) {
-        var pos = new Vector(
-          c.x + r[0] * (2 * Number(!!(i & 1)) - 1),
-          c.y + r[1] * (2 * Number(!!(i & 2)) - 1),
-          c.z + r[2] * (2 * Number(!!(i & 4)) - 1)
-        );
-        return new Vertex(pos, new Vector(info[1]));
-      }));
-    }));
+    return CSG.fromPolygons(
+      [
+        [[0, 4, 6, 2], [-1, 0, 0]],
+        [[1, 3, 7, 5], [+1, 0, 0]],
+        [[0, 1, 5, 4], [0, -1, 0]],
+        [[2, 6, 7, 3], [0, +1, 0]],
+        [[0, 2, 3, 1], [0, 0, -1]],
+        [[4, 5, 7, 6], [0, 0, +1]]
+      ]
+      .map(info =>
+        new Polygon(info[0].map((i: number) =>
+          new Vertex(
+            new Vector(
+              c.x + r[0] * (2 * Number(!!(i & 1)) - 1),
+              c.y + r[1] * (2 * Number(!!(i & 2)) - 1),
+              c.z + r[2] * (2 * Number(!!(i & 4)) - 1)
+            ),
+            new Vector(info[1]),
+          )
+        ))
+      )
+    );
   }
 
   // Construct a solid sphere. Optional parameters are `center`, `radius`,
@@ -407,7 +416,7 @@ class CSG {
   // 
   // Example usage:
   // 
-  //     var sphere = CSG.sphere({
+  //     const sphere = CSG.sphere({
   //       center: [0, 0, 0],
   //       radius: 1,
   //       slices: 16,
@@ -450,7 +459,7 @@ class CSG {
   // 
   // Example usage:
   // 
-  //     var cylinder = CSG.cylinder({
+  //     const cylinder = CSG.cylinder({
   //       start: [0, -1, 0],
   //       end: [0, 1, 0],
   //       radius: 1,
@@ -575,8 +584,8 @@ class CSG {
   //          +-------+
   // 
   intersect(csg: CSG): CSG {
-    var a = new CSGNode(this.clone().polygons);
-    var b = new CSGNode(csg.clone().polygons);
+    const a = new CSG.Node(this.clone().polygons);
+    const b = new CSG.Node(csg.clone().polygons);
     a.invert();
     b.clipTo(a);
     b.invert();
