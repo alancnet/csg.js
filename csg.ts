@@ -1,14 +1,13 @@
 // # class Vector
 
 // Represents a 3D vector.
-// 
+//
 // Example usage:
-// 
+//
 //     new CSG.Vector(1, 2, 3);
 //     new CSG.Vector([1, 2, 3]);
 //     new CSG.Vector({ x: 1, y: 2, z: 3 });
 class Vector {
-
   x: number;
   y: number;
   z: number;
@@ -109,22 +108,29 @@ class Vertex {
       this.normal.lerp(other.normal, t)
     );
   }
-};
+}
 
 // # class Plane
 
 // Represents a plane in 3D space.
 class Plane {
   constructor(public normal: Vector, public w: number) {}
-  
+
   // `CSG.Plane.EPSILON` is the tolerance used by `splitPolygon()` to decide if a
   // point is on the plane.
   static EPSILON = 1e-5;
 
-  static fromPoints = function fromPoints(a: Vector, b: Vector, c: Vector): Plane {
-    const n = b.minus(a).cross(c.minus(a)).unit();
+  static fromPoints = function fromPoints(
+    a: Vector,
+    b: Vector,
+    c: Vector
+  ): Plane {
+    const n = b
+      .minus(a)
+      .cross(c.minus(a))
+      .unit();
     return new Plane(n, n.dot(a));
-  }
+  };
 
   clone(): Plane {
     return new Plane(this.normal.clone(), this.w);
@@ -140,7 +146,13 @@ class Plane {
   // `coplanarFront` or `coplanarBack` depending on their orientation with
   // respect to this plane. Polygons in front or in back of this plane go into
   // either `front` or `back`.
-  splitPolygon(polygon: Polygon, coplanarFront: Polygon[], coplanarBack: Polygon[], front: Polygon[], back: Polygon[]): void {
+  splitPolygon(
+    polygon: Polygon,
+    coplanarFront: Polygon[],
+    coplanarBack: Polygon[],
+    front: Polygon[],
+    back: Polygon[]
+  ): void {
     const COPLANAR = 0;
     const FRONT = 1;
     const BACK = 2;
@@ -152,7 +164,8 @@ class Plane {
     const types = [];
     for (let i = 0; i < polygon.vertices.length; i++) {
       const t = this.normal.dot(polygon.vertices[i].pos) - this.w;
-      const type = (t < -Plane.EPSILON) ? BACK : (t > Plane.EPSILON) ? FRONT : COPLANAR;
+      const type =
+        t < -Plane.EPSILON ? BACK : t > Plane.EPSILON ? FRONT : COPLANAR;
       polygonType |= type;
       types.push(type);
     }
@@ -160,7 +173,10 @@ class Plane {
     // Put the polygon in the correct list, splitting it when necessary.
     switch (polygonType) {
       case COPLANAR:
-        (this.normal.dot(polygon.plane.normal) > 0 ? coplanarFront : coplanarBack).push(polygon);
+        (this.normal.dot(polygon.plane.normal) > 0
+          ? coplanarFront
+          : coplanarBack
+        ).push(polygon);
         break;
       case FRONT:
         front.push(polygon);
@@ -180,7 +196,9 @@ class Plane {
           if (ti != BACK) f.push(vi);
           if (ti != FRONT) b.push(ti != BACK ? vi.clone() : vi);
           if ((ti | tj) == SPANNING) {
-            const t = (this.w - this.normal.dot(vi.pos)) / this.normal.dot(vj.pos.minus(vi.pos));
+            const t =
+              (this.w - this.normal.dot(vi.pos)) /
+              this.normal.dot(vj.pos.minus(vi.pos));
             const v = vi.interpolate(vj, t);
             f.push(v);
             b.push(v.clone());
@@ -195,7 +213,7 @@ class Plane {
         break;
     }
   }
-};
+}
 
 // # class Polygon
 
@@ -203,7 +221,7 @@ class Plane {
 // be coplanar and form a convex loop. They do not have to be `CSG.Vertex`
 // instances but they must behave similarly (duck typing can be used for
 // customization).
-// 
+//
 // Each convex polygon has a `shared` property, which is shared between all
 // polygons that are clones of each other or were split from the same polygon.
 // This can be used to define per-polygon properties (such as surface color).
@@ -235,7 +253,6 @@ class Polygon {
 // the front and/or back subtrees. This is not a leafy BSP tree since there is
 // no distinction between internal and leaf nodes.
 class CSGNode {
-
   plane: Plane;
   front: CSGNode;
   back: CSGNode;
@@ -329,7 +346,13 @@ class CSGNode {
     const back = [];
 
     for (let i = 0; i < polygons.length; i++) {
-      this.plane.splitPolygon(polygons[i], this.polygons, this.polygons, front, back);
+      this.plane.splitPolygon(
+        polygons[i],
+        this.polygons,
+        this.polygons,
+        front,
+        back
+      );
     }
 
     if (front.length) {
@@ -373,18 +396,21 @@ class CSG {
   // Construct an axis-aligned solid cuboid. Optional parameters are `center` and
   // `radius`, which default to `[0, 0, 0]` and `[1, 1, 1]`. The radius can be
   // specified using a single number or a list of three numbers, one for each axis.
-  // 
+  //
   // Example code:
-  // 
+  //
   //     const cube = CSG.cube({
   //       center: [0, 0, 0],
   //       radius: 1
   //     });
   static cube = function(options: CSGCubeOptions = {}): CSG {
     const c = new Vector(options.center || [0, 0, 0]);
-    const r = !options.radius ? [1, 1, 1] : options.radius instanceof Array ?
-             options.radius : [options.radius, options.radius, options.radius];
-    
+    const r = !options.radius
+      ? [1, 1, 1]
+      : options.radius instanceof Array
+        ? options.radius
+        : [options.radius, options.radius, options.radius];
+
     return CSG.fromPolygons(
       [
         [[0, 4, 6, 2], [-1, 0, 0]],
@@ -393,29 +419,32 @@ class CSG {
         [[2, 6, 7, 3], [0, +1, 0]],
         [[0, 2, 3, 1], [0, 0, -1]],
         [[4, 5, 7, 6], [0, 0, +1]]
-      ]
-      .map(info =>
-        new Polygon(info[0].map((i: number) =>
-          new Vertex(
-            new Vector(
-              c.x + r[0] * (2 * Number(!!(i & 1)) - 1),
-              c.y + r[1] * (2 * Number(!!(i & 2)) - 1),
-              c.z + r[2] * (2 * Number(!!(i & 4)) - 1)
-            ),
-            new Vector(info[1]),
+      ].map(
+        info =>
+          new Polygon(
+            info[0].map(
+              (i: number) =>
+                new Vertex(
+                  new Vector(
+                    c.x + r[0] * (2 * Number(!!(i & 1)) - 1),
+                    c.y + r[1] * (2 * Number(!!(i & 2)) - 1),
+                    c.z + r[2] * (2 * Number(!!(i & 4)) - 1)
+                  ),
+                  new Vector(info[1])
+                )
+            )
           )
-        ))
       )
     );
-  }
+  };
 
   // Construct a solid sphere. Optional parameters are `center`, `radius`,
   // `slices`, and `stacks`, which default to `[0, 0, 0]`, `1`, `16`, and `8`.
   // The `slices` and `stacks` parameters control the tessellation along the
   // longitude and latitude directions.
-  // 
+  //
   // Example usage:
-  // 
+  //
   //     const sphere = CSG.sphere({
   //       center: [0, 0, 0],
   //       radius: 1,
@@ -429,7 +458,7 @@ class CSG {
     const stacks = options.stacks || 8;
     const polygons: Polygon[] = [];
     let vertices: Vertex[] = [];
-    
+
     function vertex(theta, phi) {
       const dir = new Vector(
         Math.cos(theta * Math.PI * 2) * Math.sin(phi * Math.PI),
@@ -438,7 +467,7 @@ class CSG {
       );
       vertices.push(new Vertex(c.plus(dir.times(r)), dir));
     }
-  
+
     for (let i = 0; i < slices; i++) {
       for (let j = 0; j < stacks; j++) {
         vertices = [];
@@ -451,14 +480,14 @@ class CSG {
     }
 
     return CSG.fromPolygons(polygons);
-  }
+  };
 
   // Construct a solid cylinder. Optional parameters are `start`, `end`,
   // `radius`, and `slices`, which default to `[0, -1, 0]`, `[0, 1, 0]`, `1`, and
   // `16`. The `slices` parameter controls the tessellation.
-  // 
+  //
   // Example usage:
-  // 
+  //
   //     const cylinder = CSG.cylinder({
   //       start: [0, -1, 0],
   //       end: [0, 1, 0],
@@ -471,7 +500,8 @@ class CSG {
     const ray = e.minus(s);
     const r = options.radius || 1;
     const slices = options.slices || 16;
-    const axisZ = ray.unit(), isY = (Math.abs(axisZ.y) > 0.5);
+    const axisZ = ray.unit(),
+      isY = Math.abs(axisZ.y) > 0.5;
     const axisX = new Vector(Number(isY), Number(!isY), 0).cross(axisZ).unit();
     const axisY = axisX.cross(axisZ).unit();
     const start = new Vertex(s, axisZ.negated());
@@ -480,26 +510,38 @@ class CSG {
 
     function point(stack: number, slice: number, normalBlend: number): Vertex {
       const angle = slice * Math.PI * 2;
-      const out = axisX.times(Math.cos(angle)).plus(axisY.times(Math.sin(angle)));
+      const out = axisX
+        .times(Math.cos(angle))
+        .plus(axisY.times(Math.sin(angle)));
       const pos = s.plus(ray.times(stack)).plus(out.times(r));
-      const normal = out.times(1 - Math.abs(normalBlend)).plus(axisZ.times(normalBlend));
+      const normal = out
+        .times(1 - Math.abs(normalBlend))
+        .plus(axisZ.times(normalBlend));
       return new Vertex(pos, normal);
     }
 
     for (let i = 0; i < slices; i++) {
-      const t0 = i / slices, t1 = (i + 1) / slices;
+      const t0 = i / slices,
+        t1 = (i + 1) / slices;
       polygons.push(new Polygon([start, point(0, t0, -1), point(0, t1, -1)]));
-      polygons.push(new Polygon([point(0, t1, 0), point(0, t0, 0), point(1, t0, 0), point(1, t1, 0)]));
+      polygons.push(
+        new Polygon([
+          point(0, t1, 0),
+          point(0, t0, 0),
+          point(1, t0, 0),
+          point(1, t1, 0)
+        ])
+      );
       polygons.push(new Polygon([end, point(1, t1, 1), point(1, t0, 1)]));
     }
 
     return CSG.fromPolygons(polygons);
-  }
+  };
 
   // Construct a CSG solid from a list of `CSG.Polygon` instances.
   static fromPolygons = function(polygons: Polygon[]): CSG {
     return new CSG(polygons);
-  }
+  };
 
   static Node = CSGNode;
   static Polygon = Polygon;
@@ -517,9 +559,9 @@ class CSG {
 
   // Return a new CSG solid representing space in either this solid or in the
   // solid `csg`. Neither this solid nor the solid `csg` are modified.
-  // 
+  //
   //     A.union(B)
-  // 
+  //
   //     +-------+            +-------+
   //     |       |            |       |
   //     |   A   |            |       |
@@ -528,7 +570,7 @@ class CSG {
   //          |   B   |            |       |
   //          |       |            |       |
   //          +-------+            +-------+
-  // 
+  //
   union(csg: CSG): CSG {
     const a = new CSGNode(this.clone().polygons);
     const b = new CSGNode(csg.clone().polygons);
@@ -543,9 +585,9 @@ class CSG {
 
   // Return a new CSG solid representing space in this solid but not in the
   // solid `csg`. Neither this solid nor the solid `csg` are modified.
-  // 
+  //
   //     A.subtract(B)
-  // 
+  //
   //     +-------+            +-------+
   //     |       |            |       |
   //     |   A   |            |       |
@@ -554,7 +596,7 @@ class CSG {
   //          |   B   |
   //          |       |
   //          +-------+
-  // 
+  //
   subtract(csg: CSG): CSG {
     const a = new CSGNode(this.clone().polygons);
     const b = new CSGNode(csg.clone().polygons);
@@ -571,9 +613,9 @@ class CSG {
 
   // Return a new CSG solid representing space both this solid and in the
   // solid `csg`. Neither this solid nor the solid `csg` are modified.
-  // 
+  //
   //     A.intersect(B)
-  // 
+  //
   //     +-------+
   //     |       |
   //     |   A   |
@@ -582,7 +624,7 @@ class CSG {
   //          |   B   |
   //          |       |
   //          +-------+
-  // 
+  //
   intersect(csg: CSG): CSG {
     const a = new CSG.Node(this.clone().polygons);
     const b = new CSG.Node(csg.clone().polygons);
